@@ -2,6 +2,8 @@
 
 (in-package #:cl-nono)
 
+(defparameter *puzzle* nil)
+
 (defmacro continuable (&body body)
   `(restart-case
        (progn ,@body)
@@ -21,12 +23,12 @@
   (print
    (sdl:window
     *x-res* *y-res*
-    :title-caption "nonogram"
-    :icon-caption "nonogram"
+    :title-caption "cl-nono.lisp"
+    :icon-caption "cl-nono.lisp"
     :double-buffer t
     :fullscreen *fullscreen*))
   (setf (sdl:frame-rate) 10)
-  (unless (sdl:initialise-default-font sdl:*font-9x15*)
+  (unless (sdl:initialise-default-font sdl:*font-9x18b*)
     (error "Can not initialize font."))
   (print sdl:*default-display*))
   
@@ -39,7 +41,7 @@
 (defun main ()
   (sdl:with-init (sdl:sdl-init-video)
     (setup-window)
-    (load-pictures)
+    (setq *puzzle* (load-puzzle "squirrel"))
     (sdl:with-events ()
       (:video-expose-event 
        ()
@@ -53,12 +55,16 @@
 	  ;; required or else "memory fault" fatal error
 	  (return-from main)))
        (sdl:clear-display sdl:*black*)
-       (draw-bitmap (aref *bitmaps* 0) :pixel-size 16
-		    :draw-grid t)
-       (sdl:draw-string-solid-* 
-	(format nil "Hello World" 10 50)
-	0 0
-	:color sdl:*red*)
+       (when *puzzle*
+	 (draw-puzzle *puzzle*
+		      *puzzle-x* *puzzle-y*
+		      :pixel-size *pixel-size*)
+		      )
+       (when *puzzle*
+	 (sdl:draw-string-solid-* 
+	  (format nil (puzzle-name *puzzle*) 10 50)
+	  0 0
+	  :color sdl:*red*))
        (sdl:update-display))
 
       (:key-down-event
