@@ -18,7 +18,9 @@
 (declaim (type uint16 *window-offset-x* *window-offset-y*))
 
 ;; what tile is the mouse cursor hovering over in current frame?
-(defparameter *hovered-tile-x* -1)
-(defparameter *hovered-tile-y* -1)
-(declaim (type int16 *hovered-tile-x* *hovered-tile-y*))
+(defparameter *hovered-square-x* -1)
+(defparameter *hovered-square-y* -1)
+(declaim (type int8 *hovered-tile-x* *hovered-tile-y*))
 
+(defparameter *highlight-hovered-square* t)
+(declaim (type boolean *highlight-hovered-square*))

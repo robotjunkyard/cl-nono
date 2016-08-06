@@ -5,7 +5,8 @@
   :author "Nick Baker <njb@robotjunkyard.org>"
   :license "Closed, but will be open when project is completed"
   :depends-on (#:lispbuilder-sdl
-	       #:lispbuilder-sdl-ttf)
+	       ;; #:lispbuilder-sdl-ttf
+	       )
   :serial t
   :components ((:file "package")
 	       (:file "types")
@@ -13,5 +14,6 @@
 	       (:file "vars")
 	       (:file "pictures")
 	       (:file "puzzle")
+	       (:file "board")
                (:file "cl-nono")))
 

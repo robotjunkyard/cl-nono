@@ -55,7 +55,7 @@
   (let ((bitmap (load-picture name)))
     (make-puzzle name bitmap)))
 
-(defun draw-puzzle (puzzle x y &key (pixel-size 16))
+(defun draw-puzzle (puzzle x y &key (pixel-size *pixel-size*))
   (let ((tbuf (make-array 16 :element-type 'character
 			  :adjustable t
 			  :fill-pointer 0)))
@@ -100,4 +100,5 @@
 	 (incf col)
 	 (setf (fill-pointer tbuf) 0
 	       drx (+ x (* col pixel-size))))))
+
 
