@@ -1,0 +1,10 @@
+(in-package :cl-nono)
+
+(deftype uint8 ()
+  '(unsigned-byte 8))
+(deftype int8 ()
+  '(signed-byte 8))
+(deftype uint16 ()
+  '(unsigned-byte 16))
+(deftype int16 ()
+  '(signed-byte 16))
