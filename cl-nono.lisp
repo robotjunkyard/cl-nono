@@ -3,8 +3,8 @@
 (in-package #:cl-nono)
 
 (defparameter *solved-puzzles* '())
-(defparameter *state* 'PLAYING
-  "States can be: PLAYING, REVIEW")
+(defparameter *state* 'INTRO
+  "States can be: INTRO, PLAYING, REVIEW")
 (defparameter *board* nil)
 (defparameter *status-text*
   (make-array 0 :element-type 'character
@@ -17,6 +17,77 @@
   `(restart-case
        (progn ,@body)
      (continue () :report "Continue")))
+
+(defun print-intro ()
+  (let ((text #("+------cl-nono.lisp v0.9-------+"
+		"| a tiny nonogram puzzle clone |"
+		"|     made in Common Lisp      |"
+                "| email: njb@robotjunkyard.org |"
+		"|                              |"
+		"| HOW TO PLAY                  |"
+		"| -----------                  |"
+		"| Uncover  the  hidden picture |"
+		"| by finding  only the squares |"
+		"| which contain  pixels.       |"
+		"|                              |"
+		"| Rows and Columns have  hints |"
+		"| given by numbers, indicating |"
+		"| the existence of consecutive |"
+		"| pixels along  them.          |"
+		"|                              |"
+		"| Flag squares you are certain |"
+		"| are empty with an 'X' to aid |"
+		"| you in your deductions.      |"
+		"|                              |"
+		"| Strive for zero mistakes!    |"
+		"|                              |"
+                "| LMouse: toggle on/off pixel  |"
+                "| RMouse: flag square as X     |"
+		"| F11   : window/fullscreen    |"
+                "| Esc   : exit game any time   |"
+                "|                              |"
+		"| ON WORLD WIDE WEB            |"
+		"| -----------------            |"
+		"| http://robotjunkyard.itch.io |"
+                "| Twitter: @robotjunkyard      |"
+		"|                              |"
+		"|    Press any key to begin    |"
+		"|                              |"
+		"+------------------------------+")))
+    ;; print background stripes
+    (loop for n below (min *x-res* *y-res*) by 8
+       for i from 0 do
+#|	 (sdl:draw-circle-* 
+	  (truncate *x-res* 2)
+	  (truncate *y-res* 2)
+	  (truncate (+ n
+		       (* 16
+			  (sin (mod (* 0.0015 (sdl:sdl-get-ticks)) 26)))))
+	  :color *off-color*)|#
+
+	 (sdl:draw-circle-* 
+	  (truncate *x-res* 2)
+	  (truncate *y-res* 2)
+	  (truncate (+ n
+		       (mod (* 0.025 (sdl:sdl-get-ticks)) 16)))
+	  :color (if (evenp i)
+		     *outer-lines-color*
+		     *outer-lines-color-lighter*)))
+
+    ;; print splash text
+    (let* ((visual-width (sdl:get-font-size (aref text 0) :size :w))
+	   (visual-height (sdl:get-font-size (aref text 0) :size :h))
+	   (x (- (truncate *x-res* 2) (truncate visual-width 2))))
+      (sdl:draw-box-* x 0 visual-width
+		      *y-res*
+		      :color *off-color*)
+      (loop for each-line across text
+	 for y from 16 by (+ visual-height 4)
+	 do
+	   (sdl:draw-string-solid-* each-line x y
+				    :color sdl:*black*)
+	   (sdl:draw-string-solid-* each-line (- x 3) (- y 3)
+				    :color sdl:*white*)))))
 
 (defun list-puzzles ()
   (loop for x in (directory "gfx/*.png")
@@ -104,13 +175,8 @@
 
 (defun main (&optional (name nil))
   (sdl:with-init (sdl:sdl-init-video)
-    (setq *state* 'PLAYING)
+    (setq *state* 'INTRO)
     (setup-window)
-    (let ((puzzle-name 
-	   (if name
-	       name
-	       (random-unsolved-puzzle-name))))
-      (init-board puzzle-name))
     (sdl:with-events ()
       (:video-expose-event 
        ()
@@ -122,9 +188,13 @@
 	 ((sdl:key-pressed-p :SDL-KEY-ESCAPE)
 	  (sdl:quit-sdl)
 	  ;; required or else "memory fault" fatal error
-	  (return-from main)))
+	  (return-from main))
+	 ((sdl:key-pressed-p :SDL-KEY-F11)
+	  (setq *fullscreen* (not *fullscreen*))
+	  (setup-window)))
        (sdl:clear-display sdl:*black*)
-       (when *board*
+       (when (and (member *state* '(PLAYING REVIEW))
+		  *board*)
 	 (draw-board *board*
 		     *puzzle-x* *puzzle-y*
 		     :pixel-size *pixel-size*
@@ -133,7 +203,7 @@
 		     :draw-only-on (not (eq *state* 'PLAYING)))
 	 (setf (fill-pointer *status-text*) 0)
 	 (let ((mistakes (board-mistakes *board*)))
-	   (ecase *state*
+	   (case *state*
 	     (PLAYING
 	      (format *status-text* "mistakes: ~d" mistakes)
 	      (sdl:draw-string-solid-* 
@@ -150,30 +220,36 @@
 	      (sdl:draw-string-solid-*
 	       *end-of-game-text* 8 0
 	       :color sdl:*red*)
-	      (draw-puzzle-name))))
-       (sdl:update-display)))
+	      (draw-puzzle-name)))))
+       (when (eq *state* 'INTRO)
+	 (print-intro))
+       (sdl:update-display))
 
       (:key-down-event
        (:KEY key :MOD-KEY mod)     
-       (format t "Key ~a pressed~%" key)
-       (case key
-	 ;; Note that ESC already handled in INIT event further up
-	 ((:SDL-KEY-F11)
-	  (setq *fullscreen* (not *fullscreen*))
-	  (setup-window))
-	 ((:SDL-KEY-R)
-	  (when (eq *state* 'REVIEW)
-	    (init-board (puzzle-name (board-puzzle *board*)))
-	    (setq *state* 'PLAYING)))
-	 ((:SDL-KEY-RETURN)
-	  (format t "Derp~%")
-	  (when (eq *state* 'REVIEW)
-	    (let ((puzzle-name 
-		   (random-unsolved-puzzle-name)))
-	      (when puzzle-name
-		(init-board puzzle-name)
-		(setq *state* 'PLAYING)))))))
-
+       (if (and (eq *state* 'INTRO)
+		(not (member key '(:SDL-KEY-F11
+				   :SDL-KEY-ESCAPE))))
+	   (let ((puzzle-name 
+		  (if name
+		      name
+		      (random-unsolved-puzzle-name))))
+	     (setq *state* 'PLAYING)
+	     (init-board puzzle-name))
+	   (case key
+	     ;; Note that ESC already handled in INIT event further up
+	     ((:SDL-KEY-R)
+	      (when (eq *state* 'REVIEW)
+		(init-board (puzzle-name (board-puzzle *board*)))
+		(setq *state* 'PLAYING)))
+	     ((:SDL-KEY-RETURN)
+	      (when (eq *state* 'REVIEW)
+		(let ((puzzle-name 
+		       (random-unsolved-puzzle-name)))
+		  (when puzzle-name
+		    (init-board puzzle-name)
+		    (setq *state* 'PLAYING))))))))
+      
       (:mouse-motion-event
        (:x x :y y :x-rel x-rel :y-rel y-rel)
        (when *board*
@@ -183,10 +259,9 @@
 					  x y)
 	   (setq *hovered-square-x*  (or sqx -1)
 		 *hovered-square-y*  (or sqy -1)))))
-
+      
       (:mouse-button-down-event
        (:button button :state state :x x :y y)
-       (format t "BTN ~a,  STATE ~a~%" button state)
        (when (and 
 	      (eq *state* 'PLAYING)
 	      *board*
@@ -228,3 +303,10 @@
        ()
        (format t "Okay, fine, be that way...~%")
        t))))
+
+(defun save-game-and-die ()
+  (sb-ext:save-lisp-and-die
+   "cl-nono"
+   :executable t
+   :toplevel #':main
+   :save-runtime-options t))
