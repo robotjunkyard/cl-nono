@@ -308,5 +308,6 @@
   (sb-ext:save-lisp-and-die
    "cl-nono"
    :executable t
-   :toplevel #':main
-   :save-runtime-options t))
+   :toplevel #'main
+   :save-runtime-options t
+   :compression 9))
