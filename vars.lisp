@@ -10,7 +10,7 @@
 (declaim (type uint16 *x-res* *y-res*))
 
 (defparameter *pixel-size* 20)  ;; box size of a puzzle pixel
-(defparameter *puzzle-x* 204)
+(defparameter *puzzle-x* 160)
 (defparameter *puzzle-y* 104)
 
 (defparameter *window-offset-x* 0)

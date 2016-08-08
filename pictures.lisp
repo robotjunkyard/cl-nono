@@ -1,18 +1,28 @@
 (in-package :cl-nono)
 
-(defparameter *on-color*  sdl:*white*)
+(defparameter *on-color*  sdl:*white*
+  "Color of an 'on' pixel for a drawn bitmap/board.")
+(defparameter *on-highlighted-color* sdl:*yellow*
+  "Color of an 'on' pixel when mouse hovers over it.")
 (defparameter *off-color* (sdl:color :r (+ 12 12)
 				     :g (+ 12 24)
-				     :b (+ 12 48)))
-(defparameter *grid-color* sdl:*black*)
+				     :b (+ 12 48))
+  "Color of an 'off'/'no-pixel'")
+(defparameter *grid-color* sdl:*black*
+  "Color of the inner grid.")
 (defparameter *outer-lines-color* (sdl:color :r 16
 					     :g 44
-					     :b 46))
+					     :b 46)
+  "Color of the outer-picture grid lines.")
 (defparameter *outer-lines-color-lighter* (sdl:color :r (+ 24 16)
 						     :g (+ 48 44)
-						     :b (+ 48 46)))
+						     :b (+ 48 46))
+  "Color of the lighter gridlines, used to delineate 'every X number of squares' for quick, easy visual reading by the player.")
 
 (defun load-picture (name)
+  "Uses SDL to load a .PNG, then returns it as a simple bitmap.  Bitmap is a 2D array whose element-type is BIT.
+
+In the source PNG, any pixel that is not a pure black (0, 0, 0) color is transformed into a 1."
   (let*
       ((image  (sdl:load-image
 		(format nil "gfx/~a.png" (string-downcase name))))
@@ -31,7 +41,7 @@
 		(setf (aref bitmap x y)
 		      (if (= 0 r g b)
 			  0 1)))))
-    (sdl:free image)
+    (sdl:free image)  ;; we don't need the SDL surface anymore
     bitmap))
 
 (defun draw-bitmap (bitmap
@@ -41,10 +51,14 @@
 		      (y 0)
 		      (draw-grid  nil)
 		      (draw-outer-lines t)
+		      (draw-only-on nil)
 		      (off-color  *off-color*)
 		      (on-color   *on-color*)
 		      (grid-color *grid-color*)
 		      (highlight-hovered *highlight-hovered-square*))
+  "Draw a bitmap on the screen with various 'features' like the grid and various options.
+
+A bitmap is a 2D array, but unlike LOAD-PICTURE it is NOT strictly of element-type BIT; it can draw those, but it will also accept the value -1 of a square to denote those 'Marked-As-No-Pixel' by the player, which is drawn as an X."
   (declare (type uint8 pixel-size)
 	   (type int16 x y)
 	   (type boolean draw-grid highlight-hovered))
@@ -61,23 +75,30 @@
 					 (= by *hovered-square-y*)))
 				   *highlight-color*
 				   off-color)
-			       on-color)))
-		(sdl:draw-box-* (+ x (* pixel-size bx))
-				(+ y (* pixel-size by))
-				pixel-size
-				pixel-size
-				:color color)
-		(when (= -1 value)
-		  (sdl:draw-line-* (+ x (* (1+ bx) pixel-size))
-				   (+ y (* (1+ by) pixel-size))
-				   (+ x (* bx pixel-size))
-				   (+ y (* by pixel-size))
-				   :color sdl:*red*)
-		  (sdl:draw-line-* (+ x (* bx pixel-size))
-				   (+ y (* (1+ by) pixel-size))
-				   (+ x (* (1+ bx) pixel-size))
-				   (+ y (* by pixel-size))
-				   :color sdl:*red*))
+			       (if (and highlight-hovered
+					(= bx *hovered-square-x*)
+					(= by *hovered-square-y*))
+				   *on-highlighted-color*
+				   on-color))))
+		(unless (and draw-only-on
+			     (/= value 1))
+		  (sdl:draw-box-* (+ x (* pixel-size bx))
+				  (+ y (* pixel-size by))
+				  pixel-size
+				  pixel-size
+				  :color color))
+		(unless draw-only-on
+		  (when (= -1 value)
+		    (sdl:draw-line-* (+ x (* (1+ bx) pixel-size))
+				     (+ y (* (1+ by) pixel-size))
+				     (+ x (* bx pixel-size))
+				     (+ y (* by pixel-size))
+				     :color sdl:*red*)
+		    (sdl:draw-line-* (+ x (* bx pixel-size))
+				     (+ y (* (1+ by) pixel-size))
+				     (+ x (* (1+ bx) pixel-size))
+				     (+ y (* by pixel-size))
+				     :color sdl:*red*)))
 		(when draw-grid
 		  (sdl:draw-rectangle-*
 		   (+ x (* pixel-size bx))

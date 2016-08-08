@@ -1,5 +1,13 @@
 (in-package #:cl-nono)
 
+(defun center-board ()
+  (when *board*
+    (setq *puzzle-x*
+	  (- (truncate *x-res* 2)
+	     (truncate (* *pixel-size* 
+			  (array-dimension 
+			   (board-squares *board*) 0)) 2)))))
+
 (defparameter *highlight-color* (sdl:color :r 24
 					   :g 64
 					   :b 96))
@@ -17,7 +25,8 @@
 (defun draw-board (board x y &key 
 			       (pixel-size 16)
 			       (draw-hints t)
-			       (draw-grid  t))
+			       (draw-grid  t)
+			       (draw-only-on nil))
   (declare (type board board)
 	   (type uint8 pixel-size)
 	   (type int16 x y)
@@ -28,8 +37,8 @@
 	(puzzle (board-puzzle board)))
     (draw-bitmap (board-squares board)
 		 :pixel-size pixel-size :x x :y y :draw-grid draw-grid
-		 :draw-outer-lines draw-grid)
-
+		 :draw-outer-lines draw-grid
+		 :draw-only-on draw-only-on)
     (when draw-hints
       ;; print row hints
       (loop
