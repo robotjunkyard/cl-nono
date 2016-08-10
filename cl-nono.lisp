@@ -19,7 +19,7 @@
      (continue () :report "Continue")))
 
 (defun print-intro ()
-  (let ((text #("+------cl-nono.lisp v0.9-------+"
+  (let ((text #("+------cl-nono.lisp v0.92------+"
 		"| a tiny nonogram puzzle clone |"
 		"|     made in Common Lisp      |"
                 "| email: njb@robotjunkyard.org |"
@@ -141,19 +141,16 @@
     (setq i (mod (1+ i) (length victory-colors)))
     (aref victory-colors i)))
 			
-
 (defun setup-window ()
-  (print
-   (sdl:window
-    *x-res* *y-res*
-    :title-caption "cl-nono.lisp"
-    :icon-caption "cl-nono.lisp"
-    :double-buffer t
-    :fullscreen *fullscreen*))
+  (sdl:window
+   *x-res* *y-res*
+   :title-caption "cl-nono.lisp"
+   :icon-caption "cl-nono.lisp"
+   :double-buffer t
+   :fullscreen *fullscreen*)
   (setf (sdl:frame-rate) 30)
   (unless (sdl:initialise-default-font sdl:*font-9x18b*)
-    (error "Can not initialize font."))
-  (print sdl:*default-display*))
+    (error "Can not initialize font.")))
 
 (defun init-board (name)
   (setq *board* (make-board (load-puzzle (string-downcase name))))
@@ -173,9 +170,23 @@
 	(aref (sdl:mouse-position) 1)
 	(truncate *y-res* 2)))
 
+(defun parse-args-and-run ()
+  (let ((arg (nth 1 sb-ext:*posix-argv*)))
+    (if arg
+	(let ((arg (string-downcase arg)))
+	  (if (find arg (list-puzzles) :test #'equalp)
+	      (main arg)
+	      (format t "Error: puzzle '~a' not found!~%" arg)))
+	(main))))
+  
 (defun main (&optional (name nil))
+  (setq *random-state* (make-random-state t))
   (sdl:with-init (sdl:sdl-init-video)
-    (setq *state* 'INTRO)
+    (setq *state* (if name 
+		      (progn
+			(init-board name)
+			'PLAYING)
+		      'INTRO))
     (setup-window)
     (sdl:with-events ()
       (:video-expose-event 
@@ -186,6 +197,7 @@
        #+SWANK (update-swank)
        (cond
 	 ((sdl:key-pressed-p :SDL-KEY-ESCAPE)
+	  (save-game)
 	  (sdl:quit-sdl)
 	  ;; required or else "memory fault" fatal error
 	  (return-from main))
@@ -230,12 +242,17 @@
        (if (and (eq *state* 'INTRO)
 		(not (member key '(:SDL-KEY-F11
 				   :SDL-KEY-ESCAPE))))
-	   (let ((puzzle-name 
-		  (if name
-		      name
-		      (random-unsolved-puzzle-name))))
-	     (setq *state* 'PLAYING)
-	     (init-board puzzle-name))
+	   (if (probe-file "savegame.cons")
+	       (progn
+		 (setup-loaded-game (load-game))
+		 (delete-savegame-file)
+		 (setq *state* 'PLAYING))
+	       (let ((puzzle-name 
+		      (if name
+			  name
+			  (random-unsolved-puzzle-name))))
+		 (setq *state* 'PLAYING)
+		 (init-board puzzle-name)))
 	   (case key
 	     ;; Note that ESC already handled in INIT event further up
 	     ((:SDL-KEY-R)
@@ -301,13 +318,13 @@
 
       (:quit-event
        ()
-       (format t "Okay, fine, be that way...~%")
+       (format t "-----~%Exiting already?!~%")
+       (format t "Okay, fine, be that way...~%~%")
        t))))
 
 (defun save-game-and-die ()
   (sb-ext:save-lisp-and-die
    "cl-nono"
    :executable t
-   :toplevel #'main
-   :save-runtime-options t
-   :compression 9))
+   :toplevel #'parse-args-and-run
+   :save-runtime-options t))
