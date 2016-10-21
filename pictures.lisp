@@ -1,3 +1,23 @@
+;;; CL-NONO, a small nonogram puzzle game for SDL written in Common Lisp
+;;; Copyright (C) 2016  Nick Baker <njb@robotjunkyard.org>
+;;;
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;; 
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;; 
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;
+;;;;;; pictures.lisp
+;;;
+;;; Using SDL to load and display pictures.
+
 (in-package :cl-nono)
 
 (defparameter *on-color*  sdl:*white*
@@ -25,7 +45,9 @@
 In the source PNG, any pixel that is not a pure black (0, 0, 0) color is transformed into a 1."
   (let*
       ((image  (sdl:load-image
-		(format nil "gfx/~a.png" (string-downcase name))))
+		(format nil "gfx/~a.png" (string-downcase name))
+		:image-type :PNG
+		))
        (w      (sdl:width image))
        (h      (sdl:height image))
        (bitmap (make-array (list w h)
@@ -58,7 +80,9 @@ In the source PNG, any pixel that is not a pure black (0, 0, 0) color is transfo
 		      (highlight-hovered *highlight-hovered-square*))
   "Draw a bitmap on the screen with various 'features' like the grid and various options.
 
-A bitmap is a 2D array, but unlike LOAD-PICTURE it is NOT strictly of element-type BIT; it can draw those, but it will also accept the value -1 of a square to denote those 'Marked-As-No-Pixel' by the player, which is drawn as an X."
+A bitmap is a 2D array, but unlike what LOAD-PICTURE may presume it is NOT strictly of element-type BIT; it can draw those, but it will also accept the value -1 of a square to denote those 'Marked-As-No-Pixel' by the player, which is drawn as an X.
+
+One may argue this is sloppy and incorrect use of nomenclature.  I'm inclined to agree :)"
   (declare (type uint8 pixel-size)
 	   (type int16 x y)
 	   (type boolean draw-grid highlight-hovered))

@@ -1,5 +1,5 @@
 CL-NONO
-version 0.92
+version 0.99
 by njb@robotjunkyard.org
 
 http://robotjunkyard.itch.io
@@ -12,7 +12,7 @@ Wikipedia article on Nonogram puzzles:
 https://en.wikipedia.org/wiki/Nonogram
 
 System Requirements:
-   Linux
+   Linux or Windows
    libsdl  (Uses 1.x, not 2.0)
 
 Controls:
@@ -25,13 +25,10 @@ Controls:
 Notes:
 Made Aug 5-8, 2016, using Steel Bank Common Lisp.
 
-Currently only available for Linux.  Windows version
-will be out after everything's tidied up a bit more.
-
-Also, I will release source code after bugs have been
-squashed and better comments and documentation have
-been added.  Releasing poorly-commented source code is
-as uncouth as farting in a crowded elevator.
+Due to ridiculous file sizes of executables generated
+by SBCL and how tiny this game is, I've decided it to
+be a source-only release.  I have included instructions
+how to load and build in README-SOURCECODE.txt.
 
 Only 16x16 graphics have been tested and included.
 New pictures can be made in .PNG format in the 'gfx'
@@ -45,6 +42,13 @@ and/or suggestions to:  njb@robotjunkyard.org
 
 CHANGELOG
 ---------
+Updated in v0.99:
+  - Update serialization to put savegame.cons in OS-independent folder.
+  - Add some more comments and musings in source files here-and-there.
+  - LISPBUILDER-SDL could not load PNG files in Windows version of Lisp,
+    only BMP files without SDL_IMAGE.  So, added LISPBUILDER-SDL-IMAGE
+    package to dependencies in CL-NONO.ASD.
+  - Now using GPLv3 license.
 Updated in v0.92:
   - Now properly initializes random state, so order of puzzles are now
     jumbled and not the same every time.

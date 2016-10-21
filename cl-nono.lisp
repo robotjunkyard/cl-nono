@@ -1,4 +1,20 @@
-;;;; cl-nono.lisp
+;;; CL-NONO, a small nonogram puzzle game for SDL written in Common Lisp
+;;; Copyright (C) 2016  Nick Baker <njb@robotjunkyard.org>
+;;;
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;; 
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;; 
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;;;;; cl-nono.lisp
 
 (in-package #:cl-nono)
 
@@ -19,7 +35,7 @@
      (continue () :report "Continue")))
 
 (defun print-intro ()
-  (let ((text #("+------cl-nono.lisp v0.92------+"
+  (let ((text #("+------cl-nono.lisp v0.99------+"
 		"| a tiny nonogram puzzle clone |"
 		"|     made in Common Lisp      |"
                 "| email: njb@robotjunkyard.org |"
@@ -57,19 +73,10 @@
     ;; print background stripes
     (loop for n below (min *x-res* *y-res*) by 8
        for i from 0 do
-#|	 (sdl:draw-circle-* 
-	  (truncate *x-res* 2)
-	  (truncate *y-res* 2)
-	  (truncate (+ n
-		       (* 16
-			  (sin (mod (* 0.0015 (sdl:sdl-get-ticks)) 26)))))
-	  :color *off-color*)|#
-
 	 (sdl:draw-circle-* 
 	  (truncate *x-res* 2)
 	  (truncate *y-res* 2)
-	  (truncate (+ n
-		       (mod (* 0.025 (sdl:sdl-get-ticks)) 16)))
+	  (truncate (+ n (mod (* 0.025 (sdl:sdl-get-ticks)) 16)))
 	  :color (if (evenp i)
 		     *outer-lines-color*
 		     *outer-lines-color-lighter*)))
@@ -84,8 +91,10 @@
       (loop for each-line across text
 	 for y from 16 by (+ visual-height 4)
 	 do
+	   ;; shadow
 	   (sdl:draw-string-solid-* each-line x y
 				    :color sdl:*black*)
+	   ;; white text above shadow
 	   (sdl:draw-string-solid-* each-line (- x 3) (- y 3)
 				    :color sdl:*white*)))))
 
@@ -103,7 +112,7 @@
    :color (cycle-victory-color)))
 
 (defun find-excessively-hinted-puzzles ()
-  "Scans every puzzle and returns any that have hint lines with more than five hints."
+  "Scans every puzzle and returns any that have hint lines with more than five hints.  Mainly used during development-time."
   (let ((puzzle-objs 
 	 (loop for puzzle-name in (list-puzzles) collect
 	      (load-puzzle puzzle-name))))
@@ -114,13 +123,21 @@
 			     (puzzle-hints-h puz)))
        collect puz)))
 
+;; If SWANK feature is present, that is because SBCL is currently running
+;; under an emacs+SLIME environment.  This will enable us to drop to the
+;; SBCL REPL within emacs while the CL-NONO program is running, which allows
+;; for neat things like changing functions or variables in real-time without
+;; shutting down or restarting anything (usually, at least).
+;;
+;; This gets called in 'main' further down, in every idle frame.
 (defun update-swank ()
 #-SWANK  nil
 #+SWANK  (continuable
           (let ((connection (or swank::*emacs-connection*
                                 (swank::default-connection))))
             (when connection
-              (swank::handle-requests connection t)))))
+              (swank::handle-requests connection t))))
+)
 
 (let ((i 0)
       (spin-chars #(#\| #\/ #\- #\\)))
@@ -138,6 +155,7 @@
 		     sdl:*magenta*)
 	       'vector)))
   (defun cycle-victory-color ()
+    "Use the amazing, awesome power of *~CLOSURES~* to abstract-away the cycling of colors!"
     (setq i (mod (1+ i) (length victory-colors)))
     (aref victory-colors i)))
 			
@@ -182,6 +200,7 @@
 (defun main (&optional (name nil))
   (setq *random-state* (make-random-state t))
   (sdl:with-init (sdl:sdl-init-video)
+    ;; if parameter specified, bypass splash and jump right into puzzle
     (setq *state* (if name 
 		      (progn
 			(init-board name)
@@ -207,12 +226,12 @@
        (sdl:clear-display sdl:*black*)
        (when (and (member *state* '(PLAYING REVIEW))
 		  *board*)
-	 (draw-board *board*
-		     *puzzle-x* *puzzle-y*
-		     :pixel-size *pixel-size*
-		     :draw-hints (eq *state* 'PLAYING)
-		     :draw-grid  (eq *state* 'PLAYING)
+	 (draw-board *board* *puzzle-x* *puzzle-y*
+		     :pixel-size   *pixel-size*
+		     :draw-hints   (eq *state* 'PLAYING)
+		     :draw-grid    (eq *state* 'PLAYING)
 		     :draw-only-on (not (eq *state* 'PLAYING)))
+	 ;; set "cursor" for FORMAT back to index 0
 	 (setf (fill-pointer *status-text*) 0)
 	 (let ((mistakes (board-mistakes *board*)))
 	   (case *state*
@@ -220,7 +239,8 @@
 	      (format *status-text* "mistakes: ~d" mistakes)
 	      (sdl:draw-string-solid-* 
 	       *status-text* 8 16
-	       :color (if (= 0 mistakes) sdl:*green*
+	       :color (if (= 0 mistakes)
+			  sdl:*green*
 			  sdl:*red*)))
 	     (REVIEW
 	      (let ((spin (spin-char)))
@@ -242,7 +262,7 @@
        (if (and (eq *state* 'INTRO)
 		(not (member key '(:SDL-KEY-F11
 				   :SDL-KEY-ESCAPE))))
-	   (if (probe-file "savegame.cons")
+	   (if (probe-file (savegame-path))
 	       (progn
 		 (setup-loaded-game (load-game))
 		 (delete-savegame-file)
@@ -327,4 +347,9 @@
    "cl-nono"
    :executable t
    :toplevel #'parse-args-and-run
-   :save-runtime-options t))
+   :save-runtime-options t
+   ;; if ZLIB was compiled into your copy of SBCL (for some dumb reason it
+   ;; is not included in the default binaries on sbcl.org's website),
+   ;; then uncomment this to generate a smaller executable file.
+   ;;;; :compression 9 
+   ))
