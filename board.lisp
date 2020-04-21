@@ -18,17 +18,6 @@
 
 (in-package #:cl-nono)
 
-(defun center-board ()
-  (when *board*
-    (setq *puzzle-x*
-	  (- (truncate *x-res* 2)
-	     (truncate (* *pixel-size* 
-			  (array-dimension 
-			   (board-squares *board*) 0)) 2)))))
-
-(defparameter *highlight-color* (sdl:color :r 24
-					   :g 64
-					   :b 96))
 (defstruct (board
 	     (:constructor
 	      make-board
@@ -39,6 +28,14 @@
 		       :element-type '(integer -1 1)
 		       :initial-element 0))
   (mistakes 0 :type uint16))
+
+(defun center-board ()
+  (when *board*
+    (setq *puzzle-x*
+	  (- (truncate *x-res* 2)
+	     (truncate (* *pixel-size* 
+			  (array-dimension 
+			   (board-squares *board*) 0)) 2)))))
 
 (let ((tbuf (make-array 16 :element-type 'character
 			:adjustable t
@@ -127,3 +124,4 @@
 		       (/= 1 (aref squares x y)))
 		  (return-from board-equals-solution? nil)))))
   t)
+

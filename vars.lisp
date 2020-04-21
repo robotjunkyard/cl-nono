@@ -43,3 +43,18 @@
 
 (defparameter *highlight-hovered-square* t)
 (declaim (type boolean *highlight-hovered-square*))
+
+(defparameter *highlight-color*
+  (sdl:color :r 24
+	     :g 64
+	     :b 96))
+
+(defparameter *solved-puzzles* '())
+(defparameter *state* 'INTRO
+  "States can be: INTRO, PLAYING, REVIEW")
+(defparameter *board* nil)
+(defparameter *status-text*
+  (make-array 0 :element-type 'character
+	      :adjustable t :fill-pointer 0))
+(defparameter *end-of-game-text*
+ "[ENTER] New Puzzle / [R] Retry Puzzle / [ESC] Exit")

@@ -18,21 +18,24 @@
 
 (in-package #:cl-nono)
 
-(defparameter *solved-puzzles* '())
-(defparameter *state* 'INTRO
-  "States can be: INTRO, PLAYING, REVIEW")
-(defparameter *board* nil)
-(defparameter *status-text*
-  (make-array 0 :element-type 'character
-	      :adjustable t :fill-pointer 0))
-
-(defparameter *end-of-game-text*
- "[ENTER] New Puzzle / [R] Retry Puzzle / [ESC] Exit")
-
 (defmacro continuable (&body body)
   `(restart-case
        (progn ,@body)
      (continue () :report "Continue")))
+
+(let ((i 0)		  
+      (victory-colors
+       (coerce (list sdl:*white*
+		     sdl:*red*
+		     sdl:*blue*
+		     sdl:*green*
+		     sdl:*cyan*
+		     sdl:*magenta*)
+	       'vector)))
+  (defun cycle-victory-color ()
+    "Use the amazing, awesome power of *~CLOSURES~* to abstract-away the cycling of colors!"
+    (setq i (mod (1+ i) (length victory-colors)))
+    (aref victory-colors i)))
 
 (defun print-intro ()
   (let ((text #("+------cl-nono.lisp v0.99------+"
@@ -144,20 +147,6 @@
   (defun spin-char ()
     (setq i (mod (1+ i) (length spin-chars)))
     (aref spin-chars i)))
-
-(let ((i 0)		  
-      (victory-colors
-       (coerce (list sdl:*white*
-		     sdl:*red*
-		     sdl:*blue*
-		     sdl:*green*
-		     sdl:*cyan*
-		     sdl:*magenta*)
-	       'vector)))
-  (defun cycle-victory-color ()
-    "Use the amazing, awesome power of *~CLOSURES~* to abstract-away the cycling of colors!"
-    (setq i (mod (1+ i) (length victory-colors)))
-    (aref victory-colors i)))
 			
 (defun setup-window ()
   (sdl:window
@@ -187,16 +176,7 @@
 	(truncate *x-res* 2)
 	(aref (sdl:mouse-position) 1)
 	(truncate *y-res* 2)))
-
-(defun parse-args-and-run ()
-  (let ((arg (nth 1 sb-ext:*posix-argv*)))
-    (if arg
-	(let ((arg (string-downcase arg)))
-	  (if (find arg (list-puzzles) :test #'equalp)
-	      (main arg)
-	      (format t "Error: puzzle '~a' not found!~%" arg)))
-	(main))))
-  
+ 
 (defun main (&optional (name nil))
   (setq *random-state* (make-random-state t))
   (sdl:with-init (sdl:sdl-init-video)
@@ -258,7 +238,7 @@
        (sdl:update-display))
 
       (:key-down-event
-       (:KEY key :MOD-KEY mod)     
+       (:KEY key)     
        (if (and (eq *state* 'INTRO)
 		(not (member key '(:SDL-KEY-F11
 				   :SDL-KEY-ESCAPE))))
@@ -288,7 +268,7 @@
 		    (setq *state* 'PLAYING))))))))
       
       (:mouse-motion-event
-       (:x x :y y :x-rel x-rel :y-rel y-rel)
+       (:x x :y y)
        (when *board*
 	 (multiple-value-bind
 	       (sqx sqy)
@@ -298,7 +278,7 @@
 		 *hovered-square-y*  (or sqy -1)))))
       
       (:mouse-button-down-event
-       (:button button :state state :x x :y y)
+       (:button button)
        (when (and 
 	      (eq *state* 'PLAYING)
 	      *board*
@@ -333,7 +313,8 @@
 	 (setq *mouse-pressed* t))))
 
       (:mouse-button-up-event
-       (:button button :state state :x x :y y)
+       ()
+       ;;(:button button :state state :x x :y y)
        (setq *mouse-pressed* nil))
 
       (:quit-event
@@ -341,6 +322,15 @@
        (format t "-----~%Exiting already?!~%")
        (format t "Okay, fine, be that way...~%~%")
        t))))
+
+(defun parse-args-and-run ()
+  (let ((arg (nth 1 sb-ext:*posix-argv*)))
+    (if arg
+	(let ((arg (string-downcase arg)))
+	  (if (find arg (list-puzzles) :test #'equalp)
+	      (main arg)
+	      (format t "Error: puzzle '~a' not found!~%" arg)))
+	(main))))
 
 (defun save-game-and-die ()
   (sb-ext:save-lisp-and-die

@@ -21,5 +21,7 @@
 ;;; will be using.
 
 (defpackage #:cl-nono
-  (:use #:cl))
+  (:use #:cl)
+  (:export "MAIN"))
+
 

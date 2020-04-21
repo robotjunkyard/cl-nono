@@ -23,6 +23,7 @@
 (defun hints-row (bitmap row)
   (destructuring-bind (w h)
       (array-dimensions bitmap)
+    (declare (ignore h))
     (let ((runlen  0)
 	  (hints   ()))
       (declare

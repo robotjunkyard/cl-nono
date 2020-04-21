@@ -57,7 +57,7 @@ In the source PNG, any pixel that is not a pure black (0, 0, 0) color is transfo
     (loop for x below w do
 	 (loop for y below h do
 	      (multiple-value-bind
-		    (r g b a)
+		    (r g b)
 		  (sdl:color-* (sdl:read-pixel-* x y
 						 :surface image))
 		(setf (aref bitmap x y)

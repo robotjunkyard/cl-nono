@@ -24,9 +24,12 @@
 ;;;
 ;;; It will then see CL-NONO under local-projects, and then it knows what to
 ;;; load when it sees this very file you are reading right now.
+;;;
+;;; You can also skip ASDF stuff altogether and just load the LOADME.LISP file
+;;; instead.  It's easier for new users.
 
 (asdf:defsystem #:cl-nono
-  :description "CL-NONO, a small, lightweight Nonogram puzzle game written in Common Lisp"
+  :description "A small, simple Nonogram puzzle game written in Common Lisp"
   :author "Nick Baker <njb@robotjunkyard.org>"
   :license "GPL3"
   :depends-on (#:lispbuilder-sdl-image

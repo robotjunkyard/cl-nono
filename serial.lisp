@@ -48,7 +48,8 @@
 			      :if-exists :supersede
 			      :if-does-not-exist :create)
 	(format file "~S" obj)
-	(format t "* Game saved to ~a~%" (savegame-path))))))
+	(format t "* Game saved to ~a~%" (savegame-path))
+	(format t "  cl-nono will continue from this savegame the next time you play.~%")))))
 
 (defun load-game ()
   ;; turn off reader macros for security
