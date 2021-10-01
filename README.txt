@@ -1,7 +1,6 @@
 CL-NONO
 version 0.99
 by njb@robotjunkyard.org
-web:  http://robotjunkyard.itch.io
 
 An adaptation of a nonogram-type puzzle game.
 These games are also alternatively known around
